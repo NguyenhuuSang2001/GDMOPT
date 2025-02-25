@@ -177,6 +177,8 @@ class DiffusionOPT(BasePolicy):
         obs_ = to_torch(batch.obs, device=self._device, dtype=torch.float32)
         # expert_actions = torch.Tensor([info["sub_expert_action"] for info in batch.info]).to(self._device)
         expert_actions = torch.Tensor([info["expert_action"] for info in batch.info]).to(self._device)
+        data_rates = torch.Tensor([info["data_rates"] for info in batch.info]).to(self._device)
+        
 
         bc_loss = self._actor.loss(expert_actions, obs_).mean()
 
@@ -184,7 +186,7 @@ class DiffusionOPT(BasePolicy):
             self._actor_optim.zero_grad()  # Zero the actor optimizer's gradients
             bc_loss.backward()  # Backpropagate the loss
             self._actor_optim.step()  # Perform a step of optimization
-        return bc_loss
+        return bc_loss, data_rates
 
     def _update_policy(self, batch: Batch, update: bool = False) -> torch.Tensor:
         # Compute the policy gradient loss
@@ -215,7 +217,8 @@ class DiffusionOPT(BasePolicy):
         # behavior cloning loss (bc_loss) but we do not update the actor network yet.
         # The overall loss is a weighted combination of policy gradient loss and behavior cloning loss.
         if self._bc_coef:
-            bc_loss = self._update_bc(batch, update=False)
+            bc_loss, data_rates = self._update_bc(batch, update=False)
+            print(bc_loss, data_rates)
             overall_loss = bc_loss
         else:
             pg_loss = self._update_policy(batch, update=False)

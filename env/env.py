@@ -54,7 +54,7 @@ class AIGCEnv(gym.Env):
         # Check if episode has ended
         assert not self._terminated, "One episodic has terminated"
         # Calculate reward based on last state and action taken
-        reward, expert_action, sub_expert_action, real_action = CompUtility(self.channel_gains, action)
+        reward, expert_action, sub_expert_action, real_action, data_rate = CompUtility(self.channel_gains, action)
 
         self._laststate[-1] = reward
         self._laststate[0:-1] = self.channel_gains * real_action
@@ -64,7 +64,7 @@ class AIGCEnv(gym.Env):
         if self._num_steps >= self._steps_per_episode:
             self._terminated = True
         # Information about number of steps taken
-        info = {'num_steps': self._num_steps, 'expert_action': expert_action, 'sub_expert_action': sub_expert_action}
+        info = {'num_steps': self._num_steps, 'expert_action': expert_action, 'sub_expert_action': sub_expert_action, 'data_rate': data_rate}
         return self._laststate, reward, self._terminated, info
 
     def reset(self):
