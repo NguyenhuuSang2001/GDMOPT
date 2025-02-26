@@ -193,11 +193,18 @@ class DiffusionOPT(BasePolicy):
         obs_ = to_torch(batch.obs, device=self._device, dtype=torch.float32)
         acts_ = to_torch(self(batch).act, device=self._device, dtype=torch.float32)
         pg_loss = - self._critic.q_min(obs_, acts_).mean()
+        # Log giá trị reward trung bình của batch vào TensorBoard
+        avg_reward = batch.rew.mean()  # Lấy reward trung bình của batch
+        # Lấy giá trị trung bình của 'data_rate' từ batch.info
+        if "data_rate" in batch.info:
+            avg_data_rate = torch.tensor(batch.info["data_rate"]).float().mean()
+        else:
+            avg_data_rate = torch.tensor(0.0)  # Tránh lỗi nếu không có 'data_rate'
         if update:
             self._actor_optim.zero_grad()
             pg_loss.backward()
             self._actor_optim.step()
-        return pg_loss
+        return pg_loss, avg_data_rate
 
     def _update_targets(self):
         # Perform soft update on target actor and target critic. Soft update is a method of slowly blending
@@ -216,13 +223,15 @@ class DiffusionOPT(BasePolicy):
         # Update actor network. Here, we first calculate the policy gradient (pg_loss) and
         # behavior cloning loss (bc_loss) but we do not update the actor network yet.
         # The overall loss is a weighted combination of policy gradient loss and behavior cloning loss.
+        data_rates = torch.tensor([0])
         if self._bc_coef:
             bc_loss, data_rates = self._update_bc(batch, update=False)
-            print(bc_loss, data_rates)
+            # print(bc_loss, data_rates)
             overall_loss = bc_loss
         else:
-            pg_loss = self._update_policy(batch, update=False)
+            pg_loss, avg_data_rate = self._update_policy(batch, update=False)
             overall_loss = pg_loss
+            data_rates = torch.tensor([avg_data_rate])
 
         self._actor_optim.zero_grad()
         overall_loss.backward()
@@ -232,7 +241,8 @@ class DiffusionOPT(BasePolicy):
         self._update_targets()
         return {
             'loss/critic': critic_loss.item(),  # Returns the critic loss as part of the results
-            'overall_loss': overall_loss.item()  # Returns the overall loss as part of the results
+            'overall_loss': overall_loss.item(),  # Returns the overall loss as part of the results
+            'data_rate': data_rates.float().mean()
         }
 
 class GaussianNoise:
