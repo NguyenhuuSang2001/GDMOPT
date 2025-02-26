@@ -197,7 +197,11 @@ class DiffusionOPT(BasePolicy):
         avg_reward = batch.rew.mean()  # Lấy reward trung bình của batch
         # Lấy giá trị trung bình của 'data_rate' từ batch.info
         if "data_rate" in batch.info:
-            avg_data_rate = torch.tensor(batch.info["data_rate"]).float().mean()
+            data_rate = torch.tensor(batch.info["data_rate"]).float()
+            k = max(1, int(0.2 * len(data_rate)))  # Lấy ít nhất 1 phần tử
+            top_k_values, _ = torch.topk(data_rate, k)  # Lấy k giá trị lớn nhất
+            avg_data_rate = top_k_values.mean()
+            # avg_data_rate = torch.tensor(batch.info["data_rate"]).float().mean()
         else:
             avg_data_rate = torch.tensor(0.0)  # Tránh lỗi nếu không có 'data_rate'
         if update:
