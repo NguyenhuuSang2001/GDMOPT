@@ -15,14 +15,13 @@ class DiffusionPolicy(nn.Module):
         self.diffusion = Diffusion(
             state_dim=state_dim,
             action_dim=action_dim,
-            model=MLP(state_dim, action_dim).to(device),  # Chuyển model lên GPU
-            max_action=max_action,
+            model=MLP(state_dim,action_dim).to(device),            max_action=max_action,
             beta_schedule=beta_schedule,
             n_timesteps=n_timesteps
         )
 
     def forward(self, state):
-        return self.diffusion.sample(state.to(self.device))  # Đảm bảo state ở GPU
+        return self.diffusion.sample(state.to(self.device))
 
 
 class Critic(nn.Module):
@@ -38,8 +37,7 @@ class Critic(nn.Module):
         ).to(device)
 
     def forward(self, state):
-        return self.critic(state.to(self.device))  # Chuyển state lên GPU
-
+        return self.critic(state.to(self.device))
 
 class PPO_Diffusion:
     def __init__(self, state_dim, action_dim, device='cuda:0', lr=3e-4, gamma=0.99, eps_clip=0.2):
@@ -53,7 +51,7 @@ class PPO_Diffusion:
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=lr)
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=lr)
 
-        self.scaler = torch.cuda.amp.GradScaler()  # Mixed Precision Training
+        self.scaler = torch.cuda.amp.GradScaler()
 
     def select_action(self, state):
         state = torch.FloatTensor(state).to(self.device).unsqueeze(0)
@@ -82,7 +80,7 @@ class PPO_Diffusion:
 
         advantages = self.compute_advantage(rewards, old_values, dones)
 
-        with torch.cuda.amp.autocast():  # Mixed Precision để tăng tốc
+        with torch.cuda.amp.autocast():
             new_actions = self.actor(states)
             ratio = (new_actions / actions).clamp(0.8, 1.2)
             surrogate1 = ratio * advantages
@@ -92,14 +90,14 @@ class PPO_Diffusion:
             critic_loss = nn.MSELoss()(values, advantages + old_values)
 
         self.actor_optimizer.zero_grad()
-        self.scaler.scale(actor_loss).backward()  # Dùng scaler để tối ưu GPU
+        self.scaler.scale(actor_loss).backward()
         self.scaler.step(self.actor_optimizer)
 
         self.critic_optimizer.zero_grad()
         self.scaler.scale(critic_loss).backward()
         self.scaler.step(self.critic_optimizer)
 
-        self.scaler.update()  # Cập nhật scaler cho bước tiếp theo
+        self.scaler.update()
 
 
 def train_ppo():
@@ -132,7 +130,6 @@ def train_ppo():
 
         agent.update(memory)
         memory.clear()
-
-        print(f"Episode {episode+1}: Reward = {sum(episode_rewards)}")
-
+        print('Episode ', episode+1, 'Reward: ', sum(episode_rewards))
+        # print(f'Episode {episode+1}, Reward: ', sum(episode_rewards))
 # train_ppo()
