@@ -103,7 +103,7 @@ class PPO_Diffusion:
 def train_ppo():
     env, train_envs, test_envs = make_aigc_env(1, 1)
     state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
+    action_dim = env.action_space.n
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     agent = PPO_Diffusion(state_dim, action_dim, device)
