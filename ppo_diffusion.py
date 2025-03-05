@@ -132,4 +132,4 @@ def train_ppo():
         memory.clear()
         print('Episode ', episode+1, 'Reward: ', sum(episode_rewards))
         # print(f'Episode {episode+1}, Reward: ', sum(episode_rewards))
-# train_ppo()
+train_ppo()
