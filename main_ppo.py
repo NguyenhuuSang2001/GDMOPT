@@ -64,7 +64,8 @@ def get_args():
 
     args = parser.parse_known_args()[0]
     return args
-
+            
+        
 def main(args=get_args()):
     # Tạo môi trường
     env, train_envs, test_envs = make_aigc_env(args.training_num, args.test_num)

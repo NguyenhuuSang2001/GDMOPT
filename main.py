@@ -103,6 +103,7 @@ def main(args=get_args()):
         n_timesteps=args.n_timesteps,
         bc_coef = args.bc_coef
     ).to(args.device)
+    
     actor_optim = torch.optim.AdamW(
         actor.parameters(),
         lr=args.actor_lr,
