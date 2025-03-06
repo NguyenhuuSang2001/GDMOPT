@@ -12,7 +12,7 @@ from tianshou.trainer import offpolicy_trainer
 from tianshou.exploration import GaussianNoise
 from env import make_aigc_env
 # Sửa lại import DiffusionOPT từ file diffusion_ppo.py (hoặc bạn có thể đổi tên file này thành policy.py nếu muốn)
-from policy import DiffusionPPO as DiffusionOPT
+from policy import DiffusionPPO
 from diffusion import Diffusion
 from diffusion.model import MLP, DoubleCritic
 import warnings
@@ -120,7 +120,7 @@ def main(args=get_args()):
     logger = TensorboardLogger(writer)
 
     # Khởi tạo policy DiffusionOPT
-    policy = DiffusionOPT(
+    policy = DiffusionPPO(
         state_dim=args.state_shape,
         actor=actor,
         actor_optim=actor_optim,
