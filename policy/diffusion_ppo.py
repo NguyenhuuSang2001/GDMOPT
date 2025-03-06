@@ -144,6 +144,13 @@ class DiffusionPPO(BasePolicy):
         
         return {"loss/actor": actor_loss.item(), "loss/critic": critic_loss.item()}
     
+    def learn(self, batch: Batch, **kwargs) -> dict:
+        """
+        Override abstract method learn() của BasePolicy.
+        Tại đây chỉ đơn giản gọi đến update.
+        """
+        return self.update(batch, **kwargs)
+    
     def _soft_update(self, target: nn.Module, source: nn.Module, tau: float):
         for target_param, param in zip(target.parameters(), source.parameters()):
             target_param.data.copy_(target_param.data * (1.0 - tau) + param.data * tau)
