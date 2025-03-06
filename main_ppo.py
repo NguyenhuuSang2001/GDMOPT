@@ -12,7 +12,7 @@ from tianshou.trainer import offpolicy_trainer
 from tianshou.exploration import GaussianNoise
 from env import make_aigc_env
 # Sửa lại import DiffusionOPT từ file diffusion_ppo.py (hoặc bạn có thể đổi tên file này thành policy.py nếu muốn)
-from policy import DiffusionOPT as DiffusionPPO
+from policy import DiffusionPPO
 from diffusion import Diffusion
 from diffusion.model import MLP, DoubleCritic
 import warnings
