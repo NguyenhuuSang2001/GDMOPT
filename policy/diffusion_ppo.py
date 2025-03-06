@@ -1,13 +1,17 @@
 import torch
+import copy
 import torch.nn as nn
+import numpy as np
 import torch.nn.functional as F
 from copy import deepcopy
-import numpy as np
-from tianshou.data import Batch, to_torch
+from typing import Any, Dict, List, Type, Optional, Union
+from tianshou.data import Batch, ReplayBuffer, to_torch
 from tianshou.policy import BasePolicy
 from torch.optim.lr_scheduler import CosineAnnealingLR
-
-class DiffusionOPT(BasePolicy):
+from .helpers import (
+    Losses
+)
+class DiffusionPPO(BasePolicy):
     """
     Một thuật toán kết hợp PPO với mô hình diffusion.
     Sử dụng actor diffusion để sinh hành động và cập nhật theo tiêu chí PPO.
