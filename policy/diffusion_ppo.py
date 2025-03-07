@@ -142,47 +142,58 @@ class DiffusionPPO(BasePolicy):
         return result
     def _learn_update(self, batch: Batch, **kwargs) -> dict:
         # Chuyển đổi dữ liệu batch về tensor trên thiết bị
-        print(batch)
+        # print(batch)
 
         obs = to_torch(batch.obs, device=self._device, dtype=torch.float32)
         actions = to_torch(batch.act, device=self._device, dtype=torch.float32)
         rewards = to_torch(batch.rew, device=self._device, dtype=torch.float32)
 
         # Tính giá trị hiện tại từ critic
-        values, values_ = self._critic(obs, actions).squeeze(-1)
+        values, values_ = self._critic(obs, actions)
+        
+        values = values.squeeze(-1)
         # Append thêm một giá trị 0 làm bootstrapping
-        values = torch.cat([values, torch.zeros(1, device=values.device)], dim=0)
+        values = torch.cat([values, torch.zeros(1, device=values.device)], dim=0) #torch.Size([512, 11])
 
-        advantages = self.compute_advantage(rewards, values)
+        advantages = self.compute_advantage(rewards, values) 
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-
-        # Tính log-prob mới từ policy hiện tại
-        new_batch = Batch(obs=obs)
-        current = self.forward(new_batch)
-        new_logp = current.logp
-        old_logp = self.forward(new_batch, model='actor_old')
-
-        # Tính tỷ số giữa log-prob mới và cũ (PPO ratio)
-        ratio = torch.exp(new_logp - old_logp)
-        surr1 = ratio * advantages
-        surr2 = torch.clamp(ratio, 1 - self._clip_ratio, 1 + self._clip_ratio) * advantages
-        actor_loss = -torch.min(surr1, surr2).mean()
-
+        
+        advantages = rewards
         # Tính critic loss (MSE giữa giá trị dự đoán và returns)
         returns = advantages + values[:-1]
         critic_loss = F.mse_loss(values[:-1], returns.detach())
 
+        # Tính log-prob mới từ policy hiện tại
+        new_batch = Batch(obs=obs)
+        current = self.forward(new_batch)
+        # Lấy new_logp từ actor chính, clone sau khi slicing
+        new_logp = current.logp[:, -1].clone()
+        # Lấy old_logp từ actor_old, nhưng tách gradient trước rồi clone
+        old_logp = self.forward(new_batch, model='actor_old').logp[:, -1].detach().clone()
+
+        # Tính tỷ số giữa log-prob mới và cũ (PPO ratio)
+        ratio = torch.exp(new_logp - old_logp)
+        # print('ratio:', ratio.shape)
+        # print('advantages:', advantages.shape)
+        surr1 = ratio * advantages
+        surr2 = torch.clamp(ratio, 1 - self._clip_ratio, 1 + self._clip_ratio) * advantages
+        actor_loss = -torch.min(surr1, surr2).mean()
+
         self._actor_old = deepcopy(self._actor)
         
-        # Cập nhật actor
         self._actor_optim.zero_grad()
-        actor_loss.backward()
-        self._actor_optim.step()
-
-        # Cập nhật critic
         self._critic_optim.zero_grad()
-        critic_loss.backward()
+        
+        # critic_loss.backward()
+        # actor_loss.backward()
+        
+        total_loss = actor_loss + critic_loss
+        total_loss.backward()
+        self._actor_optim.step()
         self._critic_optim.step()
+
+
+
 
         # Cập nhật mềm (soft update) cho target networks
         self._soft_update(self._target_actor, self._actor, self._tau)
