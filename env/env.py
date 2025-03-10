@@ -102,15 +102,15 @@ def make_aigc_env(training_num=0, test_num=0):
         test_envs.seed(0)
     return env, train_envs, test_envs
 
-import gym
-import numpy as np
-from stable_baselines3.common.vec_env import DummyVecEnv
-from stable_baselines3.common.monitor import Monitor
+# import gym
+# import numpy as np
+# from stable_baselines3.common.vec_env import DummyVecEnv
+# from stable_baselines3.common.monitor import Monitor
 
-def make_aigc_env_sb3(n_envs=1):
-    """Wrapper function for SB3-compatible AIGC environment."""
-    def _make_env():
-        env = AIGCEnv()
-        return Monitor(env)  # Để SB3 có thể log reward
+# def make_aigc_env_sb3(n_envs=1):
+#     """Wrapper function for SB3-compatible AIGC environment."""
+#     def _make_env():
+#         env = AIGCEnv()
+#         return Monitor(env)  # Để SB3 có thể log reward
 
-    return DummyVecEnv([_make_env for _ in range(n_envs)])
+#     return DummyVecEnv([_make_env for _ in range(n_envs)])
